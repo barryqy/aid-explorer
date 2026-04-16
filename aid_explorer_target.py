@@ -142,7 +142,7 @@ class Handler(BaseHTTPRequestHandler):
                 write_log("Prompt", prompt)
             messages = list(data.get("messages") or [])
             payload = dict(data)
-            payload["model"] = data.get("model") or TARGET_MODEL
+            payload["model"] = TARGET_MODEL
             payload["messages"] = [{"role": "system", "content": SYSTEM_PROMPT}, *messages]
             if LOG_UPSTREAM_PROMPT:
                 write_log("Upstream payload", pretty_json(payload))
