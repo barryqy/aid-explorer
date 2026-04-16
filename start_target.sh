@@ -3,8 +3,7 @@ set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-target_model="${AID_EXPLORER_TARGET_MODEL:-gpt-4}"
-request_body="{\"model\":\"${target_model}\",\"messages\":[{\"role\":\"user\",\"content\":\"{{prompt}}\"}]}"
+request_body='{"model":"gpt-4","messages":[{"role":"user","content":"{{prompt}}"}]}'
 response_path='choices[0].message.content'
 
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
@@ -57,7 +56,6 @@ print_details() {
   printf '\n'
   say_info 'Explorer Target Details'
   say_label 'URL:' "$(target_url)"
-  say_label 'Model:' "${target_model}"
   say_label 'Auth:' 'None'
   say_label 'Request:' "${request_body}"
   say_label 'Response path:' "${response_path}"
