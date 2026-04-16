@@ -5,7 +5,7 @@ Student helper repo for the DevNet learning lab that uses Cisco AI Defense Explo
 ## What Is Here
 
 - `aid_explorer_target.py` starts a small OpenAI-compatible wrapper on port `8080`
-- `start_target.sh` starts the wrapper in the background and checks the local health endpoint
+- `start_target.sh` starts the wrapper and prints the Explorer target details
 
 The wrapper expects the DevNet lab image to provide `LLM_BASE_URL` and `LLM_API_KEY`.
 
@@ -18,8 +18,9 @@ cd aid-explorer
 ./start_target.sh
 ```
 
-Then use the public target URL from the lab session:
+If you need the target values again later:
 
 ```bash
-echo "${DEVENV_APP_8080_URL}/v1/chat/completions"
+./start_target.sh --details
+./start_target.sh --health
 ```
