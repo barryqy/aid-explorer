@@ -8,7 +8,7 @@ Student helper repo for the DevNet learning lab that uses Cisco AI Defense Explo
 - `start_target.sh` starts the wrapper and prints the Explorer target details
 
 The wrapper expects the DevNet lab image to provide `LLM_BASE_URL` and `LLM_API_KEY`.
-The generated `target.log` file records startup, incoming request bodies, and model response bodies.
+The generated `target.log` file records chat-style `Prompt` and `Response` entries with timestamps.
 If you also want to log the full upstream payload with the hidden system prompt, start the server with `AID_EXPLORER_LOG_UPSTREAM=1`.
 
 ## Quick Start

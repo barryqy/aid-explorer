@@ -26,18 +26,65 @@ def pretty_json(data):
     return json.dumps(data, indent=2, ensure_ascii=False, sort_keys=False)
 
 
-def log_event(event_name, **fields):
+def write_log(label, content):
     stamp = datetime.now(timezone.utc).isoformat()
-    lines = [f"=== {stamp} {event_name} ==="]
-    for key, value in fields.items():
-        lines.append(f"{key}:")
-        if isinstance(value, str):
-            lines.append(value)
-        else:
-            lines.append(pretty_json(value))
-    lines.append("")
+    lines = [f"[{stamp}] {label}", str(content).rstrip(), ""]
     with LOG_LOCK:
         print("\n".join(lines), flush=True)
+
+
+def flatten_content(value):
+    if isinstance(value, str):
+        return value
+
+    if isinstance(value, list):
+        parts = []
+        for item in value:
+            if isinstance(item, dict):
+                if item.get("type") == "text" and item.get("text"):
+                    parts.append(str(item["text"]))
+                elif item.get("content"):
+                    parts.append(flatten_content(item["content"]))
+                else:
+                    parts.append(pretty_json(item))
+            else:
+                parts.append(str(item))
+        return "\n".join(part for part in parts if part).strip()
+
+    if isinstance(value, dict):
+        if "text" in value:
+            return str(value["text"])
+        if "content" in value:
+            return flatten_content(value["content"])
+        return pretty_json(value)
+
+    if value is None:
+        return ""
+
+    return str(value)
+
+
+def extract_prompt(data):
+    messages = data.get("messages") or []
+    prompts = []
+
+    for msg in messages:
+        if msg.get("role") != "user":
+            continue
+        text = flatten_content(msg.get("content")).strip()
+        if text:
+            prompts.append(text)
+
+    return "\n\n".join(prompts).strip()
+
+
+def extract_response(data):
+    choices = data.get("choices") or []
+    if not choices:
+        return ""
+
+    message = (choices[0] or {}).get("message") or {}
+    return flatten_content(message.get("content")).strip()
 
 
 def read_json(handler):
@@ -90,54 +137,35 @@ class Handler(BaseHTTPRequestHandler):
                 return
 
             data = read_json(self)
-            log_event(
-                "incoming_request",
-                path=self.path,
-                request_body=data,
-            )
+            prompt = extract_prompt(data)
+            if prompt:
+                write_log("Prompt", prompt)
             messages = list(data.get("messages") or [])
             payload = dict(data)
             payload["model"] = data.get("model") or TARGET_MODEL
             payload["messages"] = [{"role": "system", "content": SYSTEM_PROMPT}, *messages]
             if LOG_UPSTREAM_PROMPT:
-                log_event(
-                    "upstream_request",
-                    path=self.path,
-                    request_body=payload,
-                )
+                write_log("Upstream payload", pretty_json(payload))
 
             upstream = send_upstream(payload)
-            log_event(
-                "model_response",
-                path=self.path,
-                response_body=upstream,
-            )
+            response_text = extract_response(upstream)
+            if response_text:
+                write_log("Response", response_text)
             self.write_json(200, upstream)
         except json.JSONDecodeError:
             self.write_json(400, {"error": "invalid_json"})
         except HTTPError as exc:
             detail = exc.read().decode("utf-8", "replace")
-            log_event(
-                "upstream_error",
-                path=self.path,
-                status_code=exc.code or 502,
-                response_body={"detail": detail},
-            )
+            write_log("Upstream error", detail)
             self.write_json(exc.code or 502, {"error": "upstream_error", "detail": detail})
         except Exception as exc:
-            log_event(
-                "server_error",
-                path=self.path,
-                error=str(exc),
-            )
+            write_log("Server error", str(exc))
             self.write_json(500, {"error": "server_error", "detail": str(exc)})
 
 
 if __name__ == "__main__":
-    log_event(
-        "server_start",
-        model=TARGET_MODEL,
-        upstream_url=UPSTREAM_URL,
-        log_upstream_prompt=LOG_UPSTREAM_PROMPT,
-    )
+    details = f"Listening on port 8080 with model={TARGET_MODEL} upstream={UPSTREAM_URL}"
+    if LOG_UPSTREAM_PROMPT:
+        details += " log_upstream_prompt=true"
+    write_log("Target started", details)
     ThreadingHTTPServer(("0.0.0.0", 8080), Handler).serve_forever()
