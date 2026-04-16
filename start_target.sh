@@ -3,7 +3,7 @@ set -euo pipefail
 
 repo_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-request_body='{"model":"gpt-4","messages":[{"role":"user","content":"{{prompt}}"}]}'
+request_body='{"model":"gpt-5-mini","messages":[{"role":"user","content":"{{prompt}}"}]}'
 response_path='choices[0].message.content'
 
 if [ -t 1 ] && [ "${NO_COLOR:-}" = "" ]; then
