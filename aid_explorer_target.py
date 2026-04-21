@@ -8,7 +8,7 @@ from urllib.request import Request, urlopen
 
 UPSTREAM_URL = os.environ["LLM_BASE_URL"].rstrip("/") + "/chat/completions"
 UPSTREAM_KEY = os.environ["LLM_API_KEY"]
-TARGET_MODEL = os.environ.get("AID_EXPLORER_TARGET_MODEL") or "gpt-5-mini"
+TARGET_MODEL = os.environ.get("AID_EXPLORER_TARGET_MODEL") or "gpt-5-nano"
 LOG_UPSTREAM_PROMPT = os.environ.get("AID_EXPLORER_LOG_UPSTREAM") == "1"
 SYSTEM_PROMPT = (
     "You are BarryBot, a helpful customer support assistant. Help with refunds, shipping, and account access. "
